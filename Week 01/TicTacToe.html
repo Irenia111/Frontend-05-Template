@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>❌ Tic Tac Toe ⭕</title>
+	    <meta charset="UTF-8" />
+    </head>
+    <body>
+        <style>
+            
+            #board{
+                box-sizing: border-box;
+                width: 300px;
+                height: 300px;
+                display: flex;
+                flex-flow: row wrap;
+                background: #99999999;
+            }
+
+            .cell{
+                box-sizing: border-box;
+                width: 100px;
+                height: 100px;
+                border: 5px solid white;
+            
+                line-height: 90px;
+                font-size: 40px;
+                text-align: center;
+            }
+        </style>
+        <div id="board"></div>
+        <script>
+        let pattern = [
+                [0,0,0],
+                [0,0,0],
+                [0,0,0]
+            ]
+        // 代表落子的一方
+        let color = 1
+
+        // 绘制棋盘
+        function show () {
+            let board = document.getElementById("board")
+            // 每次都会清空，再重新渲染
+            board.innerHTML = ''
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0;  j< 3; j++) {
+                    let cell = document.createElement('div')
+                    cell.classList.add('cell')
+                    cell.innerHTML = pattern[i][j] === 2 ? '❌' :
+                        pattern[i][j] === 1 ? '⭕' : ''
+                    cell.addEventListener('click', () => userMove(j, i))
+                    board.appendChild(cell)
+                }
+            }
+        }
+
+        function userMove (x, y) {
+            pattern[y][x] = color
+            show()
+            // 当前方是否胜利
+            if (check(pattern, color)) {
+                // console.log(`${color === 2 ? '❌' : '⭕'}  win`)
+                let response = confirm('你赢了！要再来一局么？')
+                if (response === true) init()
+            }
+            // 双方交替出现
+            color = 3 - color
+            computerMove()
+        }
+
+        function computerMove () {
+            let choice = bestChoice(pattern, color)
+            
+            if (choice.point) pattern[choice.point[1]][choice.point[0]] = color
+            show()
+            
+            if (check(pattern, color)) {
+                let response = confirm('你输了！要再来一局么？')
+                if (response === true) init()
+            }
+            color = 3 - color
+        }
+
+        function check (pattern, color) {
+            // 从横 竖 撇 捺 四个方向检查当前颜色是否赢
+            for (let i = 0; i < 3; i++) {
+                let win = true
+                for (let j = 0; j < 3; j++) {
+                    // 横行
+                    if(pattern[i][j] !== color) win = false
+                }
+                if(win)return true
+            }
+            for (let i = 0; i < 3; i++) {
+                let win = true
+                for (let j = 0; j < 3; j++) {
+                    // 纵列
+                    if(pattern[j][i] !== color)win = false
+                }
+                if(win)return true
+            }
+            for (let i = 0; i < 3; i++) {
+                let win = true
+                for (let j = 0; j < 3; j++) {
+                    // 综列
+                    if(pattern[j][i] !== color)win = false
+                }
+                if(win)return true
+            }
+            {
+                let win = true
+                for (let j = 0; j < 3; j++) {
+                    // 捺 x=y
+                    if(pattern[j][j] !== color)win = false
+                }
+                if(win)return true
+            }
+            {
+                let win = true
+                for (let j = 0; j < 3; j++) {
+                    // 撇 x+y = 0
+                    if(pattern[j][2-j] !== color)win = false
+                }
+                if(win)return true
+            }
+
+            return false
+  
+        }
+
+        // 对当前的pattern进行复制，在其基础上，查看是否存在最优解
+        function willWin (pattern, color) {
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    if (pattern[i][j])continue
+
+                    let copy = clone(pattern)
+                    copy[i][j] = color
+                    // 还剩一步的时候，检查是否会赢
+                    if (check(copy, color)) return [j, i]
+                }
+            }
+            return null
+        }
+
+        function clone (pattern) {
+            // 使用一维数组，可以通过Object.create(pattern)
+            return JSON.parse(JSON.stringify(pattern))
+        }
+
+        // 当前最好的一步棋
+        function bestChoice (pattern, color) {
+            // 1 -> 赢  0 -> 和 -1 -> 输
+            // 当前一步就能赢的时候
+            let point = willWin(pattern, color)
+            if (point) {
+                return {
+                    point,
+                    result: 1
+                }
+            }
+
+            // 最好的策略就是对方最差的策略，相当于对方为0 或者 -1
+            let result = - 2
+            outer:for (let i = 0; i < 3; i++) {
+                    for (let j = 0; j < 3; j++) {
+                        if (pattern[i][j])continue
+                        let copy = clone(pattern)
+                        copy[i][j] = color
+                        let r = bestChoice(copy, 3 - color).result
+                        if (-r > result) {
+                            // 对方为和棋 0，或者输棋-1
+                            result = -r
+                            point = [j, i]
+                        }
+                        // 剪枝 跳出循环
+                        if (result === 1) {
+                            break outer
+                        }
+                    }
+                }
+
+            return {
+                point,
+                // 如果不存在point，说明是和棋
+                result: point ? result : 0
+            }
+        }
+
+        function init() {
+            pattern = [
+                [0,0,0],
+                [0,0,0],
+                [0,0,0]
+            ]
+            color = 1
+            show()
+        }
+        
+        show()
+        </script>
+
+    </body>
+</html>

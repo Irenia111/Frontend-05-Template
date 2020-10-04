@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title> Five In A Row </title>
+        <meta charset="UTF-8"/>
+    </head>
+    <body>
+        <style>
+            #character {
+                box-sizing: border-box;
+                width: 500px;
+                font-size: 20px;
+                margin: 20px 0;
+                text-align: center;
+            }
+            #board{
+                box-sizing: border-box;
+                width: 500px;
+                height: 500px;
+                display: flex;
+                flex-flow: row wrap;
+                background: #99999999;
+            }
+            .cell{
+                box-sizing: border-box;
+                width: 50px;
+                height: 50px;
+                border: 2px solid white;
+
+                line-height: 48px;
+                font-size: 20px;
+                text-align: center;
+            }
+        </style>
+        <div id="character"></div>
+        <div id="board"></div>
+        
+        <script>
+            let pattern = Array(100).fill(0)
+
+            // 代表落子的一方
+            let color = 1
+            let stepCount = 0
+
+            // 绘制棋盘
+            function show () {
+                let board = document.getElementById("board");
+                let character = document.getElementById("character");
+                character.innerHTML = `This is ${color === 2 ? '⚪' : '⚫'}'s term`
+                // 每次都会清空，再重新渲染
+                board.innerHTML = ''
+                for (let i = 0; i < 100; i++) {
+                    let cell = document.createElement('div')
+                    cell.classList.add('cell')
+                    cell.innerHTML = pattern[i] === 2 ? '⚪' : pattern[i] === 1 ? '⚫' : ''
+                    cell.addEventListener('click', () => userMove(i))
+                    board.appendChild(cell)
+                }
+
+                
+            }
+
+            function userMove (i) {
+                stepCount++
+                pattern[i] = color
+                // 当前哪方胜利
+                if (stepCount > 6 && check(pattern, color, 5)) {
+                    let response = confirm(`${color === 2 ? '⚪' : '⚫'} win, do you want to play again ?`)
+                    if (response === true) init()
+                }
+                // 双方交替出现
+                color = 3 - color
+                show()
+            }
+
+            function check (pattern, color, times) {
+                let col_count = 0, row_count = 0, pie_count = 0, na_count = 0
+                let copy = clone(pattern)
+                function col_dfs (i, j) {
+                    if (i < 0 || j < 0 || i >= 10 || j >= 10 || copy[i*10+j] !== color) return 
+                        copy[i*10+j] = 5
+                        col_count++
+                        col_dfs(i + 1, j)
+                        col_dfs(i - 1, j)
+                }
+                function row_dfs (i, j) {
+                    if (i < 0 || j < 0 || i >= 10 || j >= 10 || copy[i*10+j] !== color ) return
+                    copy[i*10+j] = 5
+                    row_count++
+                    row_dfs(i, j+ 1)
+                    row_dfs(i, j- 1)
+                }
+                function pie_dfs (i, j) {
+                    if (i < 0 || j < 0 || i >= 10 || j >= 10 || copy[i*10+j] !== color) return
+                    copy[i*10+j] = 5
+                    pie_count++
+                    pie_dfs(i - 1, j + 1)
+                    pie_dfs(i + 1, j - 1)
+                }
+                function na_dfs (i, j) {
+                    if (i < 0 || j < 0 || i >= 10 || j >= 10 || copy[i*10+j] !== color) return
+                    copy[i*10+j] = 5
+                    na_count++
+                    na_dfs(i + 1, j+ 1)
+                    na_dfs(i - 1, j- 1)
+                }
+  
+                for (let i = 0; i < 100; i++) {
+    
+                    col_dfs(Math.floor(i / 10), i % 10)
+                    if(col_count === times) return true
+                    copy = clone(pattern)
+
+                    row_dfs(Math.floor(i / 10), i % 10)
+                    if(row_count === times) return true
+                    copy = clone(pattern)
+                    
+                    pie_dfs(Math.floor(i / 10), i % 10)
+                    if(pie_count === times) return true
+                    copy = clone(pattern)
+
+                    na_dfs(Math.floor(i / 10), i % 10)
+                    if(na_count === times) return true
+
+                    col_count = 0
+                    row_count = 0
+                    pie_count = 0
+                    na_count = 0
+                }
+                return false
+            }
+
+            function clone (pattern) {
+                return Object.create(pattern)
+            }
+
+            function init () {
+                pattern = Array(100).fill(0)
+                color = 1
+                stepCount = 0
+                show() 
+            }
+
+            show()
+        </script>
+    </body>
+</html>
