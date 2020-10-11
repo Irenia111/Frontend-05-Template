@@ -200,7 +200,7 @@ async function findPath (map, start, end) {
                 let cur = table[y * 100 + x]
                 x = cur[0]
                 y = cur[1]
-                debugger
+                // debugger
                 board.children[y * 100 + x].style.backgroundColor = "lightpink"
             }
             // 标记终点颜色
