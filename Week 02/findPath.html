@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Find Path</title>
+        <meta charset="UTF-8"/>
+        <style>
+            
+            #board{
+                box-sizing: border-box;
+                width: 1000px;
+                height: 1000px;
+                display: flex;
+                flex-flow: row wrap;
+            }
+
+            .map-cell{
+                box-sizing: border-box;
+                width: 10px;
+                height: 10px;
+                border-bottom: 1px solid white;
+                border-right: 1px solid white;
+                background: grey;
+            }
+        </style>
+    </head>
+    <body>
+        <p>触摸面板，绘制障碍路径</p>
+        <div id="board"></div>
+        <button id="save">保存地图</button>
+        <button id="start">开始寻路</button>
+    </body>
+    <script src="./index6.js"></script>
+</html>
