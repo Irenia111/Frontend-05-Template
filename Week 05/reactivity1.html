@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+    <head lang="cn">
+        <title>reactivity demo</title>
+        <meta charset="UTF8"/>
+    </head>
+    <body>
+        <script>
+            let object = {
+                a: 1,
+                b: 2,
+                c: {a: 1}
+            }
+            let po = recative(object)
+            // 全局保存生成的reactivity，因为存在嵌套监听
+            let reactivities = new Map()
+            let callbacks = new Map()
+            let usedReactivties = []
+
+            effect(() => {
+                console.log(po.a)
+                console.log(po.c.a)
+            })
+            
+
+            // reactive建立对象的依赖关系，代理object
+            function reactive (object) {
+                if (reactivities.has(object)) return reactivities.get(object)
+                let proxy = new Proxy(object, {
+                    set (obj, prop, val) {
+                        // 代理set，修改object的属性
+                        obj[prop] = val
+                        // set 中传入的是监听的对象
+                        // console.log(obj, prop, val)
+                        // 遍历callbacks，执行回调函数
+                        if (callbacks.get(obj))
+                            if(callbacks.get(obj).get(prop))
+                                for (let callback of callbacks.get(obj).get(prop)) {
+                                    callback()
+                                }
+                        return obj[prop]
+                    },
+                    get (obj, prop) {
+                        // console.log(obj, prop)
+                        // 如果当前的obj[prop]是对象,则需要对对象嵌套监听
+                        if (typeof obj[prop] === "object") return new reactive(obj[prop])
+                        // 2. 将使用的代理对象在usedReactivties中注册
+                        usedReactivties.push([obj,prop])
+                        return obj[prop]
+                    }
+                })
+
+                reactivities.set(object, proxy)
+
+                return proxy
+            }
+            // 通过effect将事件绑定，相当于在set、get的过程中执行事件
+            function effect (callback) {
+                // callbacks.push(callback)
+                // 0. 清空reactive的使用注册
+                usedReactivties = []
+                // 1. 执行回调函数，如果引用了reactive代理对象的值，则在usedReactivties中注册
+                callback()
+                // 3. 在callbacks中存储
+                for (let reactivity of usedReactivties) {
+                    // 防止多次注册
+                    if (!callbacks.has(reactivity[0])) {
+                        //将对象 对象属性 与回调函数一一对应
+                        callbacks.set(reactivity[0], new Map())
+                    }
+                    // 如果该对象的属性没有绑定回调函数，则进行注册
+                    if (!callbacks.get(reactivity[0]).has(reactivity[1])) {
+                        // 在数组中存入回调
+                        callbacks.get(reactivity[0]).get(reactivity[1]).push(callback)
+                    }
+
+                }
+
+            }
+       </script>
+    </body>
+</html>

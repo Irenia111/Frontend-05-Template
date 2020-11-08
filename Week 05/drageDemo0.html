@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+    <head lang="ch">
+        <title>可拖拽DOM demo</title>
+        <meta charset="UTF-8" />
+        <style>
+            #dragable{
+                display: inline-block;
+                width: 100px;
+                height: 100px;
+                background-color: cornflowerblue;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="container">
+            Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto tempora repellat obcaecati dolor omnis earum eligendi distinctio illo quae eveniet, vel ut cum, deserunt voluptatum enim unde tempore sequi qui!
+            Lorem ipsum dolor, sit amet consectetur adipisicing elit. Perferendis nemo unde ex veniam, quia consectetur tempore ut temporibus voluptate sunt asperiores porro atque magni saepe corporis quaerat doloribus totam fuga?
+            Lorem ipsum dolor sit amet consectetur adipisicing elit. Molestias veniam assumenda id minus quas aut similique? Iusto nostrum aliquam fuga voluptas odio earum repudiandae aliquid, deserunt dolor, tenetur fugit officiis.
+            Lorem ipsum dolor sit amet, consectetur adipisicing elit. Earum, consectetur inventore. Voluptatem qui placeat officiis consequatur distinctio beatae sed error impedit culpa soluta, nam corporis perspiciatis cupiditate, a nostrum magnam.
+            Lorem ipsum dolor sit amet consectetur, adipisicing elit. Autem pariatur architecto repellendus aperiam delectus animi molestiae ab. Suscipit id, placeat aliquid temporibus tenetur repudiandae quas eum recusandae veniam sequi exercitationem!Lorem
+            Lorem ipsum dolor sit amet consectetur adipisicing elit. Deserunt possimus blanditiis quas fuga eveniet porro voluptate maiores voluptatem animi doloribus, laborum cum natus ad nisi nulla non numquam incidunt velit?
+        </div>
+        <div id="dragable"></div>
+        <script>
+            /*
+             * 监听元素的mousedown事件，在拖动元素上mousedown，触发拖动事件
+             * 监听document的mousemove事件，保证拖动的持续
+             * 拖动的实现：transform
+             */
+            const dragable = document.getElementById("dragable")
+            // 记录每一次的距离，否则下一次移动时会存在错位
+            let baseX = 0, baseY = 0
+            dragable.addEventListener("mousedown", function (e) {
+                // 记录鼠标移入的原始位置
+                const startX = e.clientX
+                const startY = e.clientY
+
+                // 按下鼠标，触发元素的拖动事件，但移动事件是监听document上的鼠标事件
+                // 鼠标移出浏览器，依旧会持续监听
+                document.addEventListener("mousemove",move)
+                document.addEventListener("mouseup", up)
+                function up (e) {
+                    // 更新baseX baseY
+                    baseX = baseX + e.clientX - startX
+                    baseY = baseY + e.clientY - startY
+
+                    // 当鼠标抬起，接触事件监听
+                    document.removeEventListener("mousemove",move)
+                    document.removeEventListener("mouseup", up)
+
+                }
+                function move (e) {
+                    // console.log(e)
+                    /* 
+                     * 需要将鼠标的位置记录，否则和鼠标移动有距离差
+                     * dragable.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`
+                     * 另外需要根据已有的距离基础上修改
+                     * dragable.style.transform = `translate(${e.clientX - startX}px, ${e.clientY - startY}px)`
+                    */
+                    dragable.style.transform = `translate(${baseX + e.clientX - startX}px, ${baseY + e.clientY - startY}px)`
+
+                }
+            })
+        </script>
+    </body>
+</html>
