@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Realm对象可视化</title>
+    <meta charset="UTF-8">
+    <meta name="vieport" content="width=device-width, initial-scale=1.0">
+    <!--以最高级别的可用模式显示内容，ie7支持最高ie7，ie8支持最高ie8，它也支持8以下的，但以最高支持的模式使用，往上类似。-->
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <!-- 引入在线资源 -->
+    <script src="https://gw.alipayobjects.com/os/lib/antv/g6/3.8.0/dist/g6.min.js"></script>
+    <style>
+      body {
+        width: 100vw;
+        height: 100vh;
+      }
+      #container {
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="container"></div>
+    <script>
+      const getRealm = () => {
+        const set = new Set()
+        const map = new Map()
+        const objects = [
+              'eval',
+              'isFinite',
+              'isNaN',
+              'parseFloat',
+              'parseInt',
+              'decodeURI',
+              'decodeURIComponent',
+              'encodeURI',
+              'encodeURIComponent',
+              'Array',
+              'Date',
+              'RegExp',
+              'Promise',
+              'Proxy',
+              'Map',
+              'WeakMap',
+              'Set',
+              'WeakSet',
+              'Function',
+              'Boolean',
+              'String',
+              'Number',
+              'Symbol',
+              'Object',
+              'Error',
+              'EvalError',
+              'RangeError',
+              'ReferenceError',
+              'SyntaxError',
+              'TypeError',
+              'URIError',
+              'ArrayBuffer',
+              /*'SharedArrayBuffer',
+              这个类型在火狐浏览器不被当做object
+              Firefox 和 Chrome 也纷纷发布文章表示将在新版本中禁用 SharedArrayBuffer 功能
+              https://blog.csdn.net/weixin_33981932/article/details/88908027
+              */
+              'DataView',
+              'Float32Array',
+              'Float64Array',
+              'Int8Array',
+              'Int16Array',
+              'Int32Array',
+              'Uint8Array',
+              'Uint16Array',
+              'Uint32Array',
+              'Uint8ClampedArray',
+              'Atomics',
+              'JSON',
+              'Math',
+              'Reflect'
+            ]
+        // 从window中得到全部的对象
+        objects.forEach(o => map.set(o, window[o]));
+        
+        const realm = {
+          id: 'realm',
+          children: objects.map(o => ({
+            id: o,
+            children: []
+          }))
+        }
+        // 采用bfs
+        const queue = [...realm.children]
+        
+        while (queue.length > 0) {
+          const child = queue.shift()
+          const id = child.id
+          const object = map.get(id)
+          
+          if (set.has(object)) continue
+          set.add(object)
+          console.log(id, object)
+          console.log(Object.getOwnPropertyNames(object))
+          for (const p of Object.getOwnPropertyNames(object)) {
+            const d = Object.getOwnPropertyDescriptor(object, p)
+            
+            const pushChild = (type = 'value') => {
+              const uid = type === 'value' ? `${id}.${p}` : `${id}.${p}.[${type}]`
+              const o = {
+                id: uid,
+                children: []
+              }
+              
+              map.set(uid, d[type])
+              child.children.push(o)
+              queue.push(o)
+            }
+            
+            // 如果当前d 是object
+            if ((d.value !== null && typeof d.value === 'object') || typeof d.value === 'function') {
+              pushChild()
+            }
+            if (d.get) {
+              pushChild('get')
+            }
+            if (d.set) {
+              pushChild('set')
+            }
+          }
+        }
+        
+        return realm
+      }
+      
+      const render = (data) => {
+        const container = document.getElementById('container')
+        const width = container.scrollWidth
+        const height = container.scrollHeight || 500
+        
+        const graph = new G6.TreeGraph({
+          container: container,
+          width,
+          height,
+          modes: {
+            default: [{
+              type: 'collapse-expand',
+              onChage: (item, collapsed) => {
+                const data = item.get('model').data
+                
+                data.collapsed = collapsed
+                return true
+              }
+            }, 'drag-canvas', 'zoom-canvas']
+          },
+          defaultNode: {
+            size: 26,
+            anchorPoints: [
+              [0, 0.5],
+              [1, 0.5]
+            ],
+            style: {
+              fill: '#c6e5ff',
+              stroke: '#5b8ff9'
+            }
+          },
+          defaultEdge: {
+            type: 'cubic-horizontal',
+            style: {
+              stroke: '#a3b1bf'
+            }
+          },
+          layout: {
+            type: 'dendrogram',
+            direction: 'LR',
+            nodeSep: 30,
+            rankSep:100
+          }
+        })
+        
+        graph.node((node) => ({
+          label: node.id,
+          labelCfg: {
+            position: node.children && node.children.length > 0 ? 'left' : 'right',
+            offset: 5
+          }
+        }))
+        
+        graph.data(data)
+        graph.render()
+        graph.fitView()
+      }
+      render(getRealm())
+    </script>
+  </body>
+</html>
