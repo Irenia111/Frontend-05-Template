@@ -1,9 +1,149 @@
+// 通过css的包，实现css的语法解析 npm install css
+const css = require('css')
+
 const EOF = Symbol('EOF') // end of file
 let currentToken = null
 let currentAttribute = null
 let currentTextNode = null
 
 let stack = [{type: 'document', children: []}]
+
+// css computing
+// css 规则收集
+let rules = []
+function addCSSRules (text) {
+    let ast = css.parse(text)
+    console.log(JSON.stringify(ast, null, '   '))
+    rules.push(...ast.stylesheet.rules)
+}
+
+function match (element, selector) {
+    if (!selector || !element.attributes || !element) return false
+
+    /**
+     * 简单选择器
+     */
+
+    if (selector.charAt(0) === '#') {
+        let attr = element.attributes.filter(attr => attr.name === 'id')[0]
+        if (attr && attr.value === selector.replace('#', '')) 
+            return true
+    } else if (selector.charAt(0) === '.') {
+        let attr = element.attributes.filter(attr => attr.name === 'class')[0]
+        if (attr && attr.value === selector.replace('.', '')) 
+            return true
+    } else {
+        if (element.tagName === selector) {
+            return true
+        }
+    }
+
+    /**
+     * 复合选择器
+     * 三类选择器： id class tag
+     * id选择器： #id tag, #id .class
+     * 类选择器： .class tag, .class #id 
+     * 标签选择器：tag .class, tag #id
+     */
+    if (selector.match(/^\#\w|\#\w[\n\t\f ]\.\w|\#\w[\n\t\f ]\w$/)) {
+        let attr = element.attributes.filter(attr => attr.name === 'id')[0]
+        if (attr && attr.value === selector.replace('#', '')) return true
+    } else if (selector.match(/^\.\w|\#w[\n\t\f ]\.w|\#\w[\n\t\f ]\w$/)) {
+        let attr = element.attributes.filter(attr => attr.name === 'class')[0]
+        if (attr && attr.value === selector.replace('.', '')) return true
+    } else {
+        if (element.tagName === selector) {
+            return true
+        } else if (selector.match(/^\w|\w[\n\t\f ]\#\w|$\w[\n\t\f ]\.\w$/)) {
+            return true
+        }
+    }
+
+    return false
+}
+
+// 实现css的权重
+function specificity (selector) {
+    // inline id class tag
+    let p = [0, 0, 0, 0]
+    let selectorParts = selector.split(' ')
+    for (let part of selectorParts) {
+        if (part.charAt(0) === '#') {
+            p[1] += 1
+        } else if (part.charAt(0) === '.') {
+            p[2] += 1
+        } else {
+            p[3] += 1
+        }
+    }
+
+    return p
+}
+
+function compare (sp1,sp2) {
+    if (sp1[0] - sp2[0]) return sp1[0] - sp2[0]
+    if (sp1[1] - sp2[1]) return sp1[1] - sp2[1]
+    if (sp1[2] - sp2[2]) return sp1[2] - sp2[2]
+
+    return sp1[3] - sp2[3]
+}
+
+function computeCSS (element) {
+    // 获取父元素序列 当前开标签的栈，对应的就是当前开元素层层嵌套的父元素
+    let elements = stack.slice().reverse()
+    // 选择器与元素的匹配 通过双循环实现
+    if (!element.computedStyle) element.computedStyle = {}
+
+    for (let rule of rules) {
+        let selectorParts = rule.selectors[0].split(' ').reverse()
+
+        if(!match(element, selectorParts[0])) continue
+
+        let matched = false
+
+        let j = 1 // j 表示当前选择器的层级
+        for (let i = 0; i < elements.length; i++) {
+            if (match(elements[i], selectorParts[j])) {
+                j++
+            }
+        }
+        // 如果j的层级与选择器层级匹配，说明匹配成功
+        if (j >= selectorParts.length) matched = true
+
+        // 生产computed属性
+        if (match) {
+            // console.log('element', element, 'matched rule', rule)
+            // 比较优先级
+            let sp = specificity(rule.selectors[0])
+            
+            let computedStyle = element.computedStyle
+            for (let declaration of rule.declarations) {
+                if (!computedStyle[declaration.property]) {
+                    computedStyle[declaration.property] = {}
+                }
+                // 选择优先级更高的规则
+                if (!!computedStyle[declaration.property].specificity) {
+                    computedStyle[declaration.property].value = declaration.value
+                    computedStyle[declaration.property].specificity = sp
+                } else if (compare(computedStyle[declaration.property].specificity, sp) < 0) {
+                    // 新的规则权重大，则覆盖旧规则
+                    computedStyle[declaration.property].value = declaration.value
+                    computedStyle[declaration.property].specificity = sp
+                }
+                
+            }
+        }
+    }
+
+    // 内联样式
+    /**
+     let inlineStyle = element.attributes.filter(p => p.name === 'style)
+     css.parse('*{' + inlineStyle + '})
+     sp = [1, 0, 0, 0]
+     for() {}
+     */
+}
+
 // 输出节点 利用token建立dom树
 function emit (token) {
     
@@ -26,6 +166,8 @@ function emit (token) {
                 })
             }
         }
+        //+++++++++++++++++ 添加css ++++++++++++++++//
+        computeCSS(element)
 
         top.children.push(element)
         element.parent = top
@@ -39,6 +181,11 @@ function emit (token) {
         if (top.tagName != token.tagName) {
             throw new Error('Tag start end doesn\'t match!')
         } else {
+            // ++++++++++++ 遇到style标签，执行添加css的操作 +++++++++++ //
+            // 不考虑link标签及 引入外界样式表的操作
+            if (top.tagName === 'style') {
+                addCSSRules(top.children[0].content)
+            }
             stack.pop()
         }
         currentTextNode = null
