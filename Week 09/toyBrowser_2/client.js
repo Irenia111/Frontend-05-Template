@@ -1,6 +1,7 @@
 const net = require('net')
 // 引入parser
-const parser = require('./parser.js')
+const parser = require('./parser')
+
 
 class Request {
     // 在Request的构造器中收集必要的信息
@@ -26,6 +27,7 @@ class Request {
         this.headers["Content-Length"] = this.bodyText.length
     }
     // 通过send函数间请求发送到服务器，send函数是异步函数，所以返回Promise
+    // send 采用传入的已建立的tcp连接，如果tcp连接未建立，那么重新建立一个tcp连接
     send (connection) {
         return new Promise((resolve, reject) => {
             const parser = new ResponseParser;
@@ -44,12 +46,12 @@ class Request {
 
             // connection监听
             connection.on('data', (data) => {
-                console.log(data.toString())
+                // console.log(data.toString())
                 parser.receive(data.toString())
                 if (parser.isFinished) {
                     resolve(parser.response)
-                    connection.end()
                 }
+                connection.end()
             });
             // 监听错误
             connection.on('error', (err) => {
@@ -98,7 +100,7 @@ class ResponseParser {
         return {
             statusCode: RegExp.$1,
             statusText: RegExp.$2,
-            headers: this.headerValue,
+            headers: this.headers,
             body: this.bodyParser.content.join('')
         }
     }
@@ -145,7 +147,7 @@ class ResponseParser {
             } else {
                 this.headerValue += char
             }
-        } else if (this.current === this.WAITING_HEADER_BLOCK_END) {
+        } else if (this.current === this.WAITING_HEADER_LINE_END) {
             if (char === '\n') {
                 this.current = this.WAITING_HEADER_NAME
             }

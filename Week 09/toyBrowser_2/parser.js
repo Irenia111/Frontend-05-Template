@@ -13,7 +13,7 @@ let stack = [{type: 'document', children: []}]
 let rules = []
 function addCSSRules (text) {
     let ast = css.parse(text)
-    console.log(JSON.stringify(ast, null, '   '))
+    // console.log(JSON.stringify(ast, null, '   '))
     rules.push(...ast.stylesheet.rules)
 }
 
@@ -44,7 +44,7 @@ function match (element, selector) {
      * id选择器： #id tag, #id .class
      * 类选择器： .class tag, .class #id 
      * 标签选择器：tag .class, tag #id
-     */
+     
     if (selector.match(/^\#\w|\#\w[\n\t\f ]\.\w|\#\w[\n\t\f ]\w$/)) {
         let attr = element.attributes.filter(attr => attr.name === 'id')[0]
         if (attr && attr.value === selector.replace('#', '')) return true
@@ -58,6 +58,7 @@ function match (element, selector) {
             return true
         }
     }
+    */
 
     return false
 }
@@ -81,7 +82,7 @@ function specificity (selector) {
 }
 
 function compare (sp1,sp2) {
-    if (sp1[0] - sp2[0]) return sp1[0] - sp2[0]
+    // if (sp1[0] - sp2[0]) return sp1[0] - sp2[0]
     if (sp1[1] - sp2[1]) return sp1[1] - sp2[1]
     if (sp1[2] - sp2[2]) return sp1[2] - sp2[2]
 
@@ -122,7 +123,7 @@ function computeCSS (element) {
                     computedStyle[declaration.property] = {}
                 }
                 // 选择优先级更高的规则
-                if (!!computedStyle[declaration.property].specificity) {
+                if (!computedStyle[declaration.property].specificity) {
                     computedStyle[declaration.property].value = declaration.value
                     computedStyle[declaration.property].specificity = sp
                 } else if (compare(computedStyle[declaration.property].specificity, sp) < 0) {
@@ -179,7 +180,12 @@ function emit (token) {
 
     } else if (token.type === 'endTag') {
         if (top.tagName != token.tagName) {
-            throw new Error('Tag start end doesn\'t match!')
+            // 自闭合元素
+            if (top.type === 'element') {
+                stack.pop()
+            } else {
+                throw new Error('Tag start end doesn\'t match!')
+            }
         } else {
             // ++++++++++++ 遇到style标签，执行添加css的操作 +++++++++++ //
             // 不考虑link标签及 引入外界样式表的操作
@@ -271,7 +277,7 @@ function beforeAttributeName (c) {
     if (c.match(/^[\t\n\f ]$/)) {
         return beforeAttributeName
     } else if (c === '/' || c === '>' || c === EOF) {
-        return afterAttributrName
+        return afterAttributeName
     } else if (c === '=') {
         
     } else {
@@ -424,4 +430,6 @@ module.exports.parseHTML = function parseHTML (html) {
     }
 
     state = state(EOF)
+
+    return stack[0]
 }
