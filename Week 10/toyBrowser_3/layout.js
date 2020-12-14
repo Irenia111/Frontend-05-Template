@@ -186,9 +186,10 @@ function layout (element) {
         let scale = style[mainSize] / (style[mainSize] - mainSpace)
         let currentMain = mainBase
         for (let i = 0; i < items.length; i++) {
-            let item = item[i]
+            let item = items[i]
             let itemStyle = getStyle(item)
 
+            // 如果有flex属性，那么不压缩
             if (itemStyle.flex) {
                 itemStyle[mainSize] = 0
             }
@@ -197,6 +198,7 @@ function layout (element) {
 
             itemStyle[mainStart] = currentMain
             itemStyle[mainEnd] = itemStyle[mainStart] + mainSign * itemStyle[mianSize]
+            // 下一个元素的主轴是上一个元素的mainEnd
             currentMain = itemStyle[mainEnd]
         }
     } else {
@@ -231,7 +233,7 @@ function layout (element) {
                     currentMain = itemStyle[mainEnd]
                 }
             } else {
-                // 
+                // 如果没有flex的item，那么 justifyContent 需要起作用
                 let currentMain, step
                 if (style.justifyContent === 'flex-start') {
                     currentMain = mainBase
@@ -256,7 +258,10 @@ function layout (element) {
 
                 for (let i = 0; i < items.length; i++) {
                     let item = items[i]
-                    itemStyle[mainStart, currentMain]
+                    let itemStyle = getStyle(item)
+
+                    itemStyle[mainStart] = currentMain
+                    // itemStyle[mainStart, currentMain]
                     itemStyle[mainEnd] = itemStyle[mainStart] + mainSign * itemStyle[mianSize]
                     currentMain = itemStyle[mainEnd] + step
                 }
@@ -264,22 +269,24 @@ function layout (element) {
         })
     }
 
-    //
-    //
+    // 5.3 计算交叉轴
     let crossSpace
+
     if (!style[crossSize]) {
+        // 父元素 无行高，子元素的高度将父元素撑开
         crossSpace = 0
         elementStyle[crossSize] = 0
         for (let i = 0; i < flexLines.length; i++) {
             elementStyle[crossSize] = elementStyle[crossSize] + flexLines[i].crossSpace
         }
     } else {
+        // 父元素有行高，将子元素高度减去
         crossSpace = style[crossSize]
         for (let i = 0; i < flexLines.length; i++) {
             crossSpace -= flexLines[i].crossSpace
         }
     }
-    //
+    // 根据 flexWrap 校正交叉轴的高度
     if (style.flexWrap === 'wrap-reverse') {
         crossBase = style[crossSize]
     } else {
@@ -315,7 +322,7 @@ function layout (element) {
         step = 0
     }
 
-    // 
+    // 每行分别处理
     flexLines.forEach(function (items) {
         let lineCrossSize = style.alignContent === 'stretch' ? 
         items.crossSpace + crossSpace / flexLines.length :

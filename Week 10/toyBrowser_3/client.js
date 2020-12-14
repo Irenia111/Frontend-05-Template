@@ -1,6 +1,8 @@
 const net = require('net')
 // 引入parser
 const parser = require('./parser')
+const images = require('images')
+const render = require('./render')
 
 
 class Request {
@@ -230,5 +232,13 @@ void async function () {
     let response = await request.send()
     // 实际使用中的浏览器是逐段解析body 
     let dom = parser.parseHTML(response.body)
-    console.log(dom)
+    // console.log(dom)
+    // 采用images库，将dom树绘制为图像
+    // 初始化屏幕画布
+    let viewport = images(800, 600)
+    // 渲染
+    // CanvasRenderingContext2D(viewport, dom.children[0])
+    render(viewport, dom.children[0])
+    viewport.save('viewport.jpg')
+
 }()
