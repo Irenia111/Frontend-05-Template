@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>手势库</title>
+</head>
+
+<body oncontextmenu="event.preventDefault()" style="height: 100vh;">
+
+</body>
+
+</html>
+<script type="module">
+  import enableGesture from '../index.js';
+
+  const ele = document.documentElement;
+
+  enableGesture(ele);
+
+  ele.addEventListener('tap', (event) => {
+    console.log('tap event triggered', event)
+  })
+
+  ele.addEventListener('press', (event) => {
+    console.log('press event triggered', event)
+  })
+
+  ele.addEventListener('flick', (event) => {
+    console.log('flick event triggered', event)
+  });
+
+  ele.addEventListener('panStart', (event) => {
+    console.log('panStart event triggered', event)
+  });
+
+  ele.addEventListener('pan', (event) => {
+    console.log('pan event triggered', event)
+  });
+
+  ele.addEventListener('panEnd', (event) => {
+    console.log('panEnd event triggered', event)
+  });
+
+</script>
