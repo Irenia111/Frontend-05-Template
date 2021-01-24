@@ -1,0 +1,22 @@
+<head>
+    <style>
+        .carousel {
+            width: 500px;
+            height: 280px;
+            /* 父元素不换行，子元素 inline-block 实现横排*/
+            white-space: nowrap;
+            overflow: hidden;
+        }
+        .carousel>div {
+            display: inline-block;
+            width: 500px;
+            height: 280px;
+            background-size: contain;
+            /* 采用 transition 实现轮播动画效果 */
+            transition: ease 0.5s;
+        }
+    </style>
+</head>
+<body>
+    <script src='./main.js'></script>
+</body>
