@@ -1,0 +1,13 @@
+{
+  "name": "publish-server",
+  "version": "1.0.1",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "start": "node ./server.js",
+    "publish-server": "scp -r -P 8022 ./* bcc@127.0.0.1:/home/bcc/publish-server"
+  },
+  "dependencies": {
+    "unzipper": "^0.10.11"
+  }
+}
